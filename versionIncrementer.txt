@@ -1,0 +1,10 @@
+#cmd
+VERSION=v2
+
+# Backend
+docker build -t muiruri1/cv-backend:$VERSION ./cv_backend
+docker push muiruri1/cv-backend:$VERSION
+
+# Frontend
+docker build -t muiruri1/cv-frontend:$VERSION ./my-react-app-parcel
+docker push muiruri1/cv-frontend:$VERSION
