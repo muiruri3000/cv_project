@@ -1,7 +1,7 @@
 # 1️⃣ Base image
 FROM python:3.12-slim
 
-# 2️⃣ Update apt and install netcat first
+
 
 
 WORKDIR /app

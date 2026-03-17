@@ -34,4 +34,5 @@ urlpatterns = router.urls + [
     path("me/", MeView.as_view(), name="me"),
     path("create-user/", views.create_user, name="create_user"),
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
+    path("health/", views.health, name="health"),
 ]

@@ -15,6 +15,7 @@ from django_ratelimit.core import is_ratelimited
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 
 from .serializers import UserSerializer, UserProfileSerializer
 from .models import (
@@ -311,10 +312,10 @@ def get_username(request):
 
 # @method_decorator(ratelimit(key="ip", rate="10/m", block=True), name="post")
 # @method_decorator(ratelimit(key=get_username, rate="4/m", block=True), name="post")
-from django_ratelimit.decorators import ratelimit
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.response import Response
-from django.utils.decorators import method_decorator
+# from django_ratelimit.decorators import ratelimit
+# from rest_framework_simplejwt.views import TokenObtainPairView
+# from rest_framework.response import Response
+# from django.utils.decorators import method_decorator
 
 
 # Helper to get username from POST data
@@ -454,3 +455,7 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({"detail": "Password changed successfully."})
+
+
+def health(request):
+    return JsonResponse({"status": "ok"})
