@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: portfolio-app
+data:
+  POSTGRES_DB: cv_db
