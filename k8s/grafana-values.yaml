@@ -1,0 +1,16 @@
+# grafana-values.yaml
+
+adminUser: admin
+adminPassword: maryM2025!  # set your custom password
+
+service:
+  type: NodePort
+  nodePort: 32000  # optional, otherwise Kubernetes assigns one
+  port: 3000       # Grafana container port
+
+persistence:
+  enabled: true
+  storageClassName: "standard"  # Minikube default storage class
+  accessModes:
+    - ReadWriteOnce
+  size: 2Gi
