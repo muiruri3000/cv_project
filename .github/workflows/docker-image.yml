@@ -35,12 +35,12 @@ jobs:
           python-version: 3.11
 
       - name: Install backend dependencies
-        working-directory: backend
+        working-directory: cv_backend
         run: |
           pip install -r requirements.txt
 
       - name: Run Django migrations
-        working-directory: backend
+        working-directory: cv_backend
         env:
           DATABASE_URL: postgres://cv_user:postgres@localhost:5432/cv_db
         run: |
