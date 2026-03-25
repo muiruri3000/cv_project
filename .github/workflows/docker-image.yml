@@ -42,7 +42,7 @@ jobs:
       - name: Run Django migrations
         working-directory: cv_backend
         env:
-          DATABASE_URL: postgres://cv_user:cvuser12345@localhost:5432/cv_db
+          DATABASE_URL: postgres://cv_user:cvuser12345@postgres:5432/cv_db
         run: |
           python manage.py migrate
 
