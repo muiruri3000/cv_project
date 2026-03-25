@@ -48,7 +48,11 @@ jobs:
       - name: Run Django migrations
         working-directory: cv_backend
         env:
-          DATABASE_URL: postgres://cv_user:cvuser12345@postgres:5432/cv_db
+          POSTGRES_DB: cv_db
+          POSTGRES_USER: cv_user
+          POSTGRES_PASSWORD: cvuser12345
+          POSTGRES_HOST: postgres   # ✅ THIS FIXES EVERYTHING
+          POSTGRES_PORT: 5432
         run: |
           python manage.py migrate
 
