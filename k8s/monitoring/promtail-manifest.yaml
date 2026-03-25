@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: loki
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+    clients:
+      - url: http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
+        timeout: 30s
+        backoff_config:     # Add this section to handle retries better
+        max_period: 5m
+        max_retries: 10
+        min_period: 500ms
+    positions:
+      filename: /run/promtail/positions.yaml
+    scrape_configs:
+      - job_name: kubernetes-pods
+        static_configs:
+          - targets: ['localhost']
+            labels:
+              job: kubernetes-pods
+              __path__: /var/lib/docker/containers/*/*-json.log
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: loki
+spec:
+  selector:
+    matchLabels:
+      name: promtail
+  template:
+    metadata:
+      labels:
+        name: promtail
+    spec:
+      serviceAccountName: promtail-sa
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: promtail
+        image: grafana/promtail:latest
+        args: ["-config.file=/etc/promtail/promtail.yaml"]
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        volumeMounts:
+          - name: config
+            mountPath: /etc/promtail
+          - name: positions
+            mountPath: /run/promtail
+          - name: containers
+            mountPath: /var/lib/docker/containers
+            readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: promtail-config
+        - name: positions
+          hostPath:
+            path: /var/lib/promtail
+            type: DirectoryOrCreate
+        - name: containers
+          hostPath:
+            path: /var/lib/docker/containers
+            type: Directory
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail-sa
+  namespace: loki
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail-clusterrole
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: promtail-clusterrole
+subjects:
+  - kind: ServiceAccount
+    name: promtail-sa
+    namespace: loki
