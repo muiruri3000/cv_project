@@ -51,7 +51,7 @@ jobs:
           POSTGRES_DB: cv_db
           POSTGRES_USER: cv_user
           POSTGRES_PASSWORD: cvuser12345
-          POSTGRES_HOST: postgres   # ✅ THIS FIXES EVERYTHING
+          POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
         run: |
           python manage.py migrate
