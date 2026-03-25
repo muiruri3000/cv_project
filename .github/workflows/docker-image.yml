@@ -62,11 +62,11 @@ jobs:
           node-version: 20
 
       - name: Install frontend dependencies
-        working-directory: my-react-parcel
+        working-directory: react-parcel
         run: |
           npm install
 
       - name: Build React App
-        working-directory: my-react-app-parcel
+        working-directory: react-parcel
         run: |
           npm run build
