@@ -38,13 +38,13 @@ jobs:
         working-directory: cv_backend
         run: |
           pip install -r requirements.txt
-      - name: Wait for Postgres
-        run: |
-          export PGPASSWORD=cvuser12345
-          until pg_isready -h postgres -U cv_user -d cv_db; do
-            echo "Waiting for Postgres..."
-            sleep 2
-          done
+      # - name: Wait for Postgres
+      #   run: |
+      #     export PGPASSWORD=cvuser12345
+      #     until pg_isready -h postgres -U cv_user -d cv_db; do
+      #       echo "Waiting for Postgres..."
+      #       sleep 2
+      #     done
       - name: Run Django migrations
         working-directory: cv_backend
         env:
