@@ -14,9 +14,9 @@ jobs:
       localhost:
         image: postgres:15
         env:
-          POSTGRES_DB: cv_db
-          POSTGRES_USER: cv_user
-          POSTGRES_PASSWORD: cvuser12345
+          POSTGRES_DB: ${{secrets.POSTGRES_DB}}
+          POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
         ports:
           - 5432:5432
         options: >-
@@ -38,19 +38,13 @@ jobs:
         working-directory: cv_backend
         run: |
           pip install -r requirements.txt
-      # - name: Wait for Postgres
-      #   run: |
-      #     export PGPASSWORD=cvuser12345
-      #     until pg_isready -h postgres -U cv_user -d cv_db; do
-      #       echo "Waiting for Postgres..."
-      #       sleep 2
-      #     done
+
       - name: Run Django migrations
         working-directory: cv_backend
         env:
-          POSTGRES_DB: cv_db
-          POSTGRES_USER: cv_user
-          POSTGRES_PASSWORD: cvuser12345
+          POSTGRES_DB: ${{secrets.POSTGRES_DB}}
+          POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
         run: |
