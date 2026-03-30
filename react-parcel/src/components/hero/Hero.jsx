@@ -18,6 +18,13 @@ const Hero = () => {
     };
 
     fetchHero();
+
+
+
+  fetch("http://localhost:8000/api/hero/")
+  .then(r => r.json())
+  .then(console.log)
+  .catch(console.error);
   }, []);
 
   if (!content) return null;

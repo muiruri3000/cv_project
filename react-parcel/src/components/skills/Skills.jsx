@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 const API_UR = process.env.REACT_APP_API_URL
+
 const API_URL = `${API_UR}/api/skills/`; // Make sure this matches your backend
 
 const Skills = () => {
