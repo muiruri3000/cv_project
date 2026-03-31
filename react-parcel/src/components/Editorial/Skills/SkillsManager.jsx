@@ -94,7 +94,7 @@ const SkillsManager = () => {
   if (loading) return <p>Loading…</p>;
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-6 h-screen">
       <h2 className="text-3xl font-bold">Skills Manager</h2>
 
       {/* Editor */}

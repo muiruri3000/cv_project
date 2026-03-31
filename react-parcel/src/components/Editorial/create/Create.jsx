@@ -3,7 +3,7 @@ const Create = () => {
 
 
   return (
-    <div className="">
+    <div className="mt-15 pt-[60px]">
       <DashboardLayout />
     </div>
   );

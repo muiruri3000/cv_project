@@ -5,7 +5,7 @@ const ProfileManager = () => {
   const [profile, setProfile] = useState(createEmptyContact())
 
   useEffect(() => {
-    const API_URL = process.env.API_URL
+    const API_URL = process.env.REACT_APP_API_URL
     const fetchProfile = async () => {
       const res = await fetch(`${API_URL}/api/profile/`)
       if (res.ok) {
@@ -52,7 +52,7 @@ const saveEntry = async () => {
 }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6 h-screen">
       <h3 className="text-3xl font-bold">Profile</h3>
       <ContactEditor contact={profile} onChange={(f, v) => setProfile(prev => ({ ...prev, [f]: v }))} />
       <button onClick={saveEntry} className="bg-green-500 text-white p-3 rounded">

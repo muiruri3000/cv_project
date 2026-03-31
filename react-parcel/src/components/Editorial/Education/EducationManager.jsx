@@ -106,7 +106,7 @@ const EducationManager = () => {
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6 h-screen">
       <h3 className="text-3xl font-bold">Education Manager</h3>
 
       {loading && <p className="text-gray-500">Loading...</p>}

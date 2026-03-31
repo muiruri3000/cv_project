@@ -83,7 +83,7 @@ const HeroManager = () => {
         onCancel={() => setEditingHero(null)}
       />
 
-      <div className="max-w-xl space-y-3">
+      <div className="max-w-xl space-y-3 h-screen">
         <h3 className="text-lg font-semibold">Saved Hero Entries</h3>
         {heroes.length === 0 && <p className="text-gray-500">No hero content added yet.</p>}
 

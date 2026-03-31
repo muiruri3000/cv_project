@@ -14,12 +14,12 @@ const ArticlesManager = () => {
   const [articles, setArticles] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
-  const API_URL = process.env.REACT_APP_API_URLs
+  const API_URL = process.env.REACT_APP_API_URL
 
   // Fetch all articles from backend
   const fetchArticles = async () => {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(`${API_URL}/api/articles/`)
       if (!response.ok) throw new Error("Failed to fetch articles");
       const data = await response.json();
       setArticles(data);
@@ -81,7 +81,7 @@ const ArticlesManager = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 h-screen">
       <ArticleEditor
         article={draft}
         onChange={handleDraftChange}

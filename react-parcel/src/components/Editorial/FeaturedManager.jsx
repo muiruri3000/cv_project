@@ -76,7 +76,7 @@ const saveProject = async (project) => {
   };
 
   return (
-    <div className="max-w-5xl space-y-8">
+    <div className="max-w-5xl space-y-8 h-screen">
       <h2 className="text-3xl font-bold">Featured Projects</h2>
 
       <FeaturedProjectEditor

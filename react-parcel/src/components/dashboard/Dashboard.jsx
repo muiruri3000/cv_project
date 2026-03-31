@@ -149,7 +149,7 @@ console.log("success: ",success)
     }
     return (
         <>
-        <div className="mt-[150px] pt-5 text-center" >
+        <div className="mt-30 pt-5 text-center Unauthorized" >
             <div>
                 {
                     error &&

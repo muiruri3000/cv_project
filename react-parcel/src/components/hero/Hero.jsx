@@ -31,8 +31,8 @@ const Hero = () => {
 
   return (
     <section
-      className="bg-dusk-sectionLighter text-black from-gray-50 to-white"
-      id="hero"
+      className=" bg-dusk-sectionLighter text-black from-gray-50 to-white"
+      id="hero "
     >
       <div className="mx-auto max-w-3xl px-6 py-28 text-center">
         {/* <h1 className="text-5xl font-extrabold tracking-tight">

@@ -8,7 +8,7 @@ const emptyArchitecture = () => ({
   services: [{ name: "" }],
   links: [{ label: "", href: "" }],
 });
-
+const API_URL = process.env.REACT_APP_API_URL;
 const ArchitectureManager = () => {
   const [architectures, setArchitectures] = useState([]);
   const [editorForm, setEditorForm] = useState(emptyArchitecture());
@@ -117,7 +117,7 @@ const ArchitectureManager = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl h-screen">
       <h3 className="text-3xl font-bold">Architectures</h3>
 
       <ArchitectureEditor architecture={editorForm} onChange={setEditorForm} />

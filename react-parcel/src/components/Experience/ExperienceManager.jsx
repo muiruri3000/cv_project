@@ -158,7 +158,7 @@ const saveAll = async () => {
 
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-8 h-screen">
       <form
         onSubmit={(e) => {
           e.preventDefault();

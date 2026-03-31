@@ -103,14 +103,14 @@ const saveSkill = async () => {
   if (loading) return <p>Loading soft skills…</p>;
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-6 h-screen">
       <h2 className="text-3xl font-bold">Soft Skills Manager</h2>
 
       {/* Editor */}
       <SoftSkillsEditor
         softSkill={editingSkill}
         onChange={handleChange}
-      />
+      /> 
 
       {/* Action Buttons */}
       <div className="flex gap-4 mt-2">

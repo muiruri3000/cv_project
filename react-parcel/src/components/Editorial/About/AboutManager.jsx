@@ -16,7 +16,7 @@ const AboutManager = () => {
   useEffect(() => {
     const fetchAbout = async () => {
       try {
-        const res = await fetch(`${API_URL}/about/`);
+        const res = await fetch(`${API_URL}/api/about/`);
         if (!res.ok) throw new Error(await res.text());
 
         const data = await res.json();
@@ -87,7 +87,7 @@ const AboutManager = () => {
   if (!about) return null;
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6 h-screen">
       <h3 className="text-3xl font-bold">About Manager</h3>
 
       {/* Editor */}
