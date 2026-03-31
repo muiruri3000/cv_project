@@ -21,8 +21,8 @@ const About = () => {
   if (!content) return null;
 
   return (
-    <section id="about" className="bg-dusk-accent/20">
-      <div className="mx-auto max-w-6xl px-6 py-20">
+    <section id="about" className="bg-white  mb-4 py-6">
+      <div className="mx-auto max-w-6xl px-6 py-20 shadow-md bg-white" style={{border: "1px solid #d1d5db"}}>
         <h2 className="text-3xl text-center font-extrabold tracking-tight">
           {content.headline}
         </h2>
@@ -41,8 +41,8 @@ const About = () => {
           </div>
 
           {/* Right column: Core Strengths */}
-          <div>
-            <h3 className="text-sm font-semibold uppercase mb-5 tracking-wide text-gray-500">
+          <div > 
+            <h3 className="text-sm font-semibold text-center uppercase mb-5 tracking-wide text-gray-500">
               Core Strengths
             </h3>
 

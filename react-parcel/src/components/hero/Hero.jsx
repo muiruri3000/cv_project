@@ -35,9 +35,9 @@ const Hero = () => {
       id="hero"
     >
       <div className="mx-auto max-w-3xl px-6 py-28 text-center">
-        <h1 className="text-5xl font-extrabold tracking-tight">
+        {/* <h1 className="text-5xl font-extrabold tracking-tight">
           Joseph Muiruri
-        </h1>
+        </h1> */}
 
         <h2 className="mt-4 text-xl font-semibold text-black">
           {content.heading}

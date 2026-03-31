@@ -57,14 +57,14 @@ const Login2 = () => {
     };
 
     return (
-        <div className="mt-5">
-            <h2>Login</h2>
+        <div className="mt-5 login2">
                  {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
+                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
           {error}
         </div>
       )}
             <form onSubmit={handleLogin}>
+      <h2>Login</h2>
                 <div>
                     <input
                         type="text"
@@ -81,7 +81,7 @@ const Login2 = () => {
                         onChange={(e) => setPassword(e.target.value)}
                     />
                 </div>
-                <div>
+                <div className="justify-end flex">
                     <button type="submit">Login</button>
                 </div>
             </form>
