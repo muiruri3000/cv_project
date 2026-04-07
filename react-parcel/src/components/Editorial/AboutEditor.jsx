@@ -1,43 +1,52 @@
-
-
 const AboutEditor = ({ about, onChange }) => {
   if (!about) return null;
 
+  const paragraphs = about.paragraphs || [];
+  const strengths = about.core_strengths || [];
+
   /* ---------- Paragraph handlers ---------- */
   const updateParagraph = (index, value) => {
-    const updated = [...about.paragraphs];
-    updated[index] = { ...updated[index], content: value };
+    const updated = [...paragraphs];
+    updated[index] = {
+      ...updated[index],
+      content: value,
+      order: index,
+    };
     onChange("paragraphs", updated);
   };
 
   const addParagraph = () => {
     onChange("paragraphs", [
-      ...about.paragraphs,
-      { content: "", order: about.paragraphs.length },
+      ...paragraphs,
+      { content: "", order: paragraphs.length },
     ]);
   };
 
   const removeParagraph = (index) => {
     onChange(
       "paragraphs",
-      about.paragraphs.filter((_, i) => i !== index)
+      paragraphs.filter((_, i) => i !== index)
     );
   };
 
   /* ---------- Core strengths handlers ---------- */
   const updateStrength = (index, field, value) => {
-    const updated = [...about.core_strengths];
-    updated[index] = { ...updated[index], [field]: value };
+    const updated = [...strengths];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+      order: index,
+    };
     onChange("core_strengths", updated);
   };
 
   const addStrength = () => {
     onChange("core_strengths", [
-      ...about.core_strengths,
+      ...strengths,
       {
         pillar: "",
         description: "",
-        order: about.core_strengths.length,
+        order: strengths.length,
       },
     ]);
   };
@@ -45,12 +54,13 @@ const AboutEditor = ({ about, onChange }) => {
   const removeStrength = (index) => {
     onChange(
       "core_strengths",
-      about.core_strengths.filter((_, i) => i !== index)
+      strengths.filter((_, i) => i !== index)
     );
   };
 
   return (
     <div className="border p-6 rounded bg-stone-200 space-y-6">
+
       {/* Headline */}
       <input
         value={about.headline || ""}
@@ -72,14 +82,15 @@ const AboutEditor = ({ about, onChange }) => {
       <div className="space-y-3">
         <h4 className="font-semibold">About Paragraphs</h4>
 
-        {about.paragraphs.map((p, idx) => (
+        {paragraphs.map((p, idx) => (
           <div key={idx} className="space-y-1">
             <textarea
-              value={p.content || ""}
+              value={p?.content || ""}
               onChange={(e) => updateParagraph(idx, e.target.value)}
               placeholder={`Paragraph ${idx + 1}`}
               className="w-full p-2 bg-white rounded"
             />
+
             <button
               type="button"
               onClick={() => removeParagraph(idx)}
@@ -103,10 +114,11 @@ const AboutEditor = ({ about, onChange }) => {
       <div className="space-y-3">
         <h4 className="font-semibold">Core Strengths</h4>
 
-        {about.core_strengths.map((s, idx) => (
+        {strengths.map((s, idx) => (
           <div key={idx} className="border p-3 bg-white rounded space-y-2">
+
             <input
-              value={s.pillar || ""}
+              value={s?.pillar || ""}
               onChange={(e) =>
                 updateStrength(idx, "pillar", e.target.value)
               }
@@ -115,7 +127,7 @@ const AboutEditor = ({ about, onChange }) => {
             />
 
             <textarea
-              value={s.description || ""}
+              value={s?.description || ""}
               onChange={(e) =>
                 updateStrength(idx, "description", e.target.value)
               }

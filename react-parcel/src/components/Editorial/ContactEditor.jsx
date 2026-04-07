@@ -8,6 +8,7 @@ export const createEmptyContact = () => ({
   location: "",
   resumeLink: "",
 })
+const safeValue = (v) => (v === undefined || v === null ? "" : v)
 
 const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
   const handleChange = (e) => {
@@ -17,27 +18,27 @@ const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
 
   return (
     <div className="space-y-4 border p-4 rounded bg-stone-200">
-     
       <input
         type="text"
         name="name"
-        value={contact.name}
+        value={safeValue(contact.name)}
         onChange={handleChange}
         placeholder="Joseph Muiruri"
         className="w-full p-2 border rounded"
       />
-          <input
+
+      <input
         type="text"
         name="title"
-        value={contact.title}
+        value={safeValue(contact.title)}
         onChange={handleChange}
         placeholder="Web Developer"
         className="w-full p-2 border rounded"
       />
-     
+
       <textarea
         name="interestStatement"
-        value={contact.interestStatement}
+        value={safeValue(contact.interestStatement)}
         onChange={handleChange}
         placeholder="Bio"
         className="w-full p-2 border rounded"
@@ -47,7 +48,7 @@ const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
       <input
         type="email"
         name="email"
-        value={contact.email}
+        value={safeValue(contact.email)}
         onChange={handleChange}
         placeholder="Email"
         className="w-full p-2 border rounded"
@@ -56,7 +57,7 @@ const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
       <input
         type="text"
         name="linkedIn"
-        value={contact.linkedIn}
+        value={safeValue(contact.linkedIn)}
         onChange={handleChange}
         placeholder="LinkedIn"
         className="w-full p-2 border rounded"
@@ -65,7 +66,7 @@ const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
       <input
         type="text"
         name="github"
-        value={contact.github}
+        value={safeValue(contact.github)}
         onChange={handleChange}
         placeholder="GitHub"
         className="w-full p-2 border rounded"
@@ -74,7 +75,7 @@ const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
       <input
         type="text"
         name="location"
-        value={contact.location}
+        value={safeValue(contact.location)}
         onChange={handleChange}
         placeholder="Location"
         className="w-full p-2 border rounded"
@@ -83,7 +84,7 @@ const ContactEditor = ({ contact = createEmptyContact(), onChange }) => {
       <input
         type="text"
         name="resumeLink"
-        value={contact.resumeLink}
+        value={safeValue(contact.resumeLink)}
         onChange={handleChange}
         placeholder="Resume link"
         className="w-full p-2 border rounded"

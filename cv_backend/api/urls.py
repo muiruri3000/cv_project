@@ -13,11 +13,12 @@ from .views import (
     ArchitectureViewSet,
     MeView,
     ChangePasswordView,
+    ProfileView,
 )
 from django.urls import path
 
 router = DefaultRouter()
-router.register("profile", PublicProfileViewSet, basename="profile")
+# router.register("profile", PublicProfileViewSet, basename="profile")
 router.register("experiences", ExperienceViewSet, basename="experiences")
 router.register("education", EducationViewSet, basename="education")
 router.register("about", AboutViewSet, basename="about")
@@ -33,6 +34,8 @@ router.register(r"articles", ArticleViewSet, basename="article")
 urlpatterns = router.urls + [
     path("me/", MeView.as_view(), name="me"),
     path("create-user/", views.create_user, name="create_user"),
+    path("profile/", ProfileView.as_view(), name="profile"),
+    
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("health/", views.health, name="health"),
 ]

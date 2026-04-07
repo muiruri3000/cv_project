@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import SkillsEditor from "../SkillsEditor";
-const API_UR = process.env.REACT_APP_API_URL
-const API_URL = `${API_UR}/api/skills/`;
+import { apiFetch } from "../../loginHelper/api";
+
+const API_URL = "/api/skills/";
 
 const emptyCategory = {
   id: null,
@@ -15,17 +16,10 @@ const SkillsManager = () => {
   const [editingCategory, setEditingCategory] = useState(emptyCategory);
   const [loading, setLoading] = useState(true);
 
-  // Fetch categories on mount
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
+  // ---------------- FETCH ----------------
   const fetchCategories = async () => {
     try {
-      const res = await fetch(API_URL);
-
- 
-      const data = await res.json();
+      const data = await apiFetch(API_URL);
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch categories", err);
@@ -34,6 +28,11 @@ const SkillsManager = () => {
     }
   };
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // ---------------- SAVE ----------------
   const saveCategory = async (category) => {
     if (!category) return;
 
@@ -48,63 +47,61 @@ const SkillsManager = () => {
         })),
     };
 
-    const method = category.id ? "PATCH" : "POST";
-    const url = category.id
+    const isEdit = Boolean(category.id);
+
+    const url = isEdit
       ? `${API_URL}${category.id}/`
       : API_URL;
 
+    const method = isEdit ? "PATCH" : "POST";
+
     try {
-      const res = await fetch(url, {
+      await apiFetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("Validation error:", errorData);
-        alert("Failed to save category. Check console for details.");
-        return;
-      }
 
       await fetchCategories();
       setEditingCategory(emptyCategory);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to save category:", err);
       alert("Unexpected error saving category");
     }
   };
 
+  // ---------------- DELETE ----------------
   const deleteCategory = async (id) => {
     if (!window.confirm("Delete this category?")) return;
 
     try {
-      await fetch(`${API_URL}${id}/`, { method: "DELETE" });
+      await apiFetch(`${API_URL}${id}/`, {
+        method: "DELETE",
+      });
+
       await fetchCategories();
 
       if (editingCategory?.id === id) {
         setEditingCategory(emptyCategory);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to delete category:", err);
       alert("Failed to delete category");
     }
   };
 
+  // ---------------- UI ----------------
   if (loading) return <p>Loading…</p>;
 
   return (
     <div className="max-w-5xl space-y-6 h-screen">
       <h2 className="text-3xl font-bold">Skills Manager</h2>
 
-      {/* Editor */}
       <SkillsEditor
         categoryData={editingCategory}
         onSave={saveCategory}
         onCancel={() => setEditingCategory(emptyCategory)}
       />
 
-      {/* New Category Button */}
       <button
         type="button"
         onClick={() => setEditingCategory(emptyCategory)}
@@ -113,7 +110,6 @@ const SkillsManager = () => {
         + New Category
       </button>
 
-      {/* List */}
       <div className="mt-6">
         <h3 className="text-2xl font-bold">Saved Skill Categories</h3>
 

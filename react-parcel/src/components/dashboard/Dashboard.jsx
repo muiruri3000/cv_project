@@ -148,8 +148,8 @@ console.log("success: ",success)
 
     }
     return (
-        <>
-        <div className="mt-30 pt-5 text-center Unauthorized" >
+        <div className="min-h-screen bg-red-100 p-5">
+        <div className="mt-30 pt-5 text-center Unauthorized flex m-30" >
             <div>
                 {
                     error &&
@@ -226,7 +226,7 @@ console.log("success: ",success)
                 </form>
             </div>
         </div>
-                    </>
+                    </div>
     )
 }
 export default Dashboard

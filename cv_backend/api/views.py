@@ -68,58 +68,35 @@ class RoleBasedPermission(BasePermission):
 
 class RoleProtectedViewSet(viewsets.ModelViewSet):
     role_permissions = {
-        "GET": ["admin", "editor", "viewer"],
-        "POST": ["admin", "editor"],
-        "PUT": ["admin", "editor"],
-        "PATCH": ["admin", "editor"],
-        "DELETE": ["admin"],
+        "GET": ["ADMIN", "EDITOR", "VIEWER"],
+        "POST": ["ADMIN", "EDITOR"],
+        "PUT": ["ADMIN", "EDITOR"],
+        "PATCH": ["ADMIN", "EDITOR"],
+        "DELETE": ["ADMIN"],
     }
     permission_classes = [RoleBasedPermission]
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        return Response(ProfileSerializer(profile).data)
 
-class PublicProfileViewSet(RoleProtectedViewSet):
-    serializer_class = ProfileSerializer
-    permission_classes = [RoleBasedPermission]
+    # def put(self, request):
+    #     profile, _ = Profile.objects.get_or_create(user=request.user)
+    #     serializer = ProfileSerializer(profile, data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save()
+    #     return Response(serializer.data)
 
-    def get_queryset(self):
-        # Always return at most ONE profile
-        return Profile.objects.all()[:1]
-
-    def list(self, request, *args, **kwargs):
-        profile = Profile.objects.first()
-        if not profile:
-            return Response({}, status=status.HTTP_200_OK)
-        serializer = self.get_serializer(profile)
-        return Response(serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        # Prevent creating new profiles
-        return Response(
-            {"detail": "Profile creation not allowed"},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED,
-        )
-
-    def update(self, request, *args, **kwargs):
-        profile = Profile.objects.first()
-        if not profile:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        serializer = self.get_serializer(profile, data=request.data)
+    def put(self, request):
+        print("🔥 PROFILE VIEW HIT")
+    def patch(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
-
-    def partial_update(self, request, *args, **kwargs):
-        profile = Profile.objects.first()
-        serializer = self.get_serializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
 class ExperienceViewSet(RoleProtectedViewSet):
     serializer_class = ExperienceSerializer
 
@@ -235,41 +212,33 @@ class SoftSkillViewSet(RoleProtectedViewSet):
     queryset = SoftSkill.objects.all().order_by("order", "skill")
     serializer_class = SoftSkillSerializer
 
-
 class ArchitectureViewSet(RoleProtectedViewSet):
     queryset = Architecture.objects.all().order_by("-id")
     serializer_class = ArchitectureSerializer
-
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    def parse_nested_json(self, data):
-        data = data.copy()
-
-        if "services" in data and isinstance(data["services"], str):
-            data["services"] = json.loads(data["services"])
-
-        if "links" in data and isinstance(data["links"], str):
-            data["links"] = json.loads(data["links"])
-
-        return data
-
     def create(self, request, *args, **kwargs):
-        data = self.parse_nested_json(request.data)
+        data = request.data.copy()  # 🔥 important for QueryDict
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data)
+
+        architecture = serializer.save()
+
+        return Response(self.get_serializer(architecture).data)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
-        data = self.parse_nested_json(request.data)
+
+        data = request.data.copy()  # 🔥 important
 
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
 
+        architecture = serializer.save()
+
+        return Response(self.get_serializer(architecture).data)
 
 class ArticleViewSet(RoleProtectedViewSet):
     queryset = Article.objects.all().order_by("-created_at")  # latest first
@@ -404,7 +373,7 @@ def create_user(request):
         )
 
     # Role validation
-    if role not in ["admin", "editor", "viewer"]:
+    if role not in ["ADMIN", "EDITOR", "VIEWER"]:
         return Response(
             {"detail": "Invalid role."},
             status=status.HTTP_400_BAD_REQUEST,
@@ -420,7 +389,7 @@ def create_user(request):
     )
 
     profile = user.profile
-    profile.role = role
+    profile.role = role.upper()
     profile.save()
 
     return Response(

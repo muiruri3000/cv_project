@@ -1,82 +1,94 @@
 import { useState, useEffect } from "react";
 import ArticleEditor from "../Articles/ArticlesEditor";
+import { apiFetch } from "../../loginHelper/api";
 
 const EMPTY_ARTICLE = {
   title: "",
   description: "",
   body: "",
   tags: "",
-  slug: "",
+
 };
+
+const slugify = (text) =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")  // replace spaces & special chars with "-"
+    .replace(/^-+|-+$/g, "");     // remove leading/trailing hyphens
 
 const ArticlesManager = () => {
   const [draft, setDraft] = useState(EMPTY_ARTICLE);
   const [articles, setArticles] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
-  const API_URL = process.env.REACT_APP_API_URL
+  const API_URL = "/api/articles/";
 
-  // Fetch all articles from backend
-  const fetchArticles = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/articles/`)
-      if (!response.ok) throw new Error("Failed to fetch articles");
-      const data = await response.json();
-      setArticles(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
+  // ---------------- FETCH ----------------
   useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const data = await apiFetch(API_URL);
+        setArticles(data || []);
+      } catch (error) {
+        console.error("Failed to fetch articles:", error);
+      }
+    };
+
     fetchArticles();
   }, []);
 
-  // Handle draft field change
-  const handleDraftChange = (e) => {
-    const { name, value } = e.target;
-    setDraft((prev) => ({ ...prev, [name]: value }));
+  // ---------------- SAVE (CREATE / UPDATE) ----------------
+const handleSave = async (e) => {
+  e.preventDefault();
+
+  const hasId = Boolean(editingId);
+
+  const url = hasId
+    ? `${API_URL}${editingId}/`
+    : API_URL;
+
+  const method = hasId ? "PUT" : "POST";
+
+  const payload = {
+    ...draft,
+    slug: slugify(draft.slug || draft.title), // ✅ enforce valid slug
   };
 
-  // Save or update article
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `${API_URL}/api/articles/${editingId}/` : `${API_URL}/api/articles/`;
+  try {
+    const saved = await apiFetch(url, {
+      method,
+      body: JSON.stringify(payload),
+    });
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
-      });
+    setDraft(EMPTY_ARTICLE);
+    setEditingId(null);
 
-      if (!response.ok) throw new Error("Failed to save article");
-
-      setDraft(EMPTY_ARTICLE);
-      setEditingId(null);
-      fetchArticles(); // refresh the list
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // Edit article
+    // refresh list
+    const refreshed = await apiFetch(API_URL);
+    setArticles(refreshed || []);
+  } catch (error) {
+    console.error("Failed to save article:", error);
+  }
+};
+  // ---------------- EDIT ----------------
   const handleEdit = (article) => {
     setDraft(article);
     setEditingId(article.id);
   };
 
-  // Delete article
+  // ---------------- DELETE ----------------
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/api/articles/${id}/`, {
+      await apiFetch(`${API_URL}${id}/`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to delete article");
-      fetchArticles(); // refresh after deletion
+
+      // refresh list
+      const refreshed = await apiFetch(API_URL);
+      setArticles(refreshed || []);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to delete article:", error);
     }
   };
 
@@ -84,7 +96,10 @@ const ArticlesManager = () => {
     <div className="space-y-8 h-screen">
       <ArticleEditor
         article={draft}
-        onChange={handleDraftChange}
+        onChange={(e) => {
+          const { name, value } = e.target;
+          setDraft((prev) => ({ ...prev, [name]: value }));
+        }}
         onSave={handleSave}
         isEditing={!!editingId}
       />
@@ -96,6 +111,7 @@ const ArticlesManager = () => {
           <div key={article.id} className="border p-4 bg-stone-200">
             <h3 className="font-bold">{article.title}</h3>
             <p className="text-sm">{article.description}</p>
+
             <div className="flex gap-3 mt-2">
               <button
                 onClick={() => handleEdit(article)}
@@ -103,6 +119,7 @@ const ArticlesManager = () => {
               >
                 Edit
               </button>
+
               <button
                 onClick={() => handleDelete(article.id)}
                 className="bg-red-400 p-2 text-white"

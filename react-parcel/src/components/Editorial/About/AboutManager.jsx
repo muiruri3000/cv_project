@@ -1,78 +1,91 @@
 import { useEffect, useState } from "react";
 import AboutEditor from "../AboutEditor";
+import { apiFetch } from "../../loginHelper/api";
 
 const createEmptyAbout = () => ({
+  id: null,
   headline: "",
   summary: "",
   paragraphs: [],
   core_strengths: [],
 });
-const API_URL = process.env.REACT_APP_API_URL
-const AboutManager = () => {
-  const [about, setAbout] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  /* ---------- Fetch from backend ---------- */
+const AboutManager = () => {
+  const [about, setAbout] = useState(createEmptyAbout());
+  const API_URL = "/api/about/";
+
+  /* ---------------- FETCH ---------------- */
   useEffect(() => {
     const fetchAbout = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/about/`);
-        if (!res.ok) throw new Error(await res.text());
-
-        const data = await res.json();
-        setAbout(data?.id ? data : createEmptyAbout());
+        const data = await apiFetch(API_URL);
+        setAbout(data || createEmptyAbout());
       } catch (err) {
         console.error("Failed to fetch about:", err);
         setAbout(createEmptyAbout());
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchAbout();
   }, []);
 
-  /* ---------- Field change handler ---------- */
-  const handleChange = (field, value) => {
-    setAbout((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  /* ---------- Save (create or update) ---------- */
+  /* ---------------- SAVE ---------------- */
   const saveAbout = async () => {
-    const method = about.id ? "PUT" : "POST";
-    const url = about.id
-      ? `${API_URL}/api/about/${about.id}/`
-      : `${API_URL}/api/about/`;
+    const hasId = Boolean(about?.id);
+
+    const url = hasId ? `${API_URL}${about.id}/` : API_URL;
+    const method = hasId ? "PUT" : "POST";
+
+    const payload = {
+      headline: about.headline,
+      summary: about.summary,
+
+      // ✅ MUST match serializer: AboutParagraphSerializer
+      paragraphs: (about.paragraphs || [])
+        .map((p, index) => ({
+          content: (p?.content || "").trim(),
+          order: index,
+        }))
+        .filter((p) => p.content.length > 0),
+
+      // ✅ MUST match serializer: CoreStrengthSerializer
+      core_strengths: (about.core_strengths || [])
+        .map((s, index) => ({
+          pillar: (s?.pillar || "").trim(),
+          description: (s?.description || "").trim(),
+          order: index,
+        }))
+        .filter((s) => s.pillar || s.description),
+    };
+
+    console.log("payload:", payload);
 
     try {
-      const res = await fetch(url, {
+      const saved = await apiFetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(about),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(await res.text());
-
-      const saved = await res.json();
-      setAbout(saved);
-      alert("About saved successfully");
+      setAbout(saved || createEmptyAbout());
+      alert("About saved successfully!");
     } catch (err) {
-      console.error("Save failed:", err);
-      alert("Failed to save About");
+      console.error("Error saving about:", err);
+      alert("Failed to save About.");
     }
   };
 
-  /* ---------- Delete ---------- */
+  /* ---------------- DELETE ---------------- */
   const deleteAbout = async () => {
     if (!about?.id) return;
 
-    if (!confirm("Delete About content permanently?")) return;
+    const confirmDelete = window.confirm(
+      "Delete About content permanently?"
+    );
+
+    if (!confirmDelete) return;
 
     try {
-      await fetch(`${API_URL}/api/about/${about.id}/`, {
+      await apiFetch(`${API_URL}${about.id}/`, {
         method: "DELETE",
       });
 
@@ -83,31 +96,32 @@ const AboutManager = () => {
     }
   };
 
-  if (loading) return <p>Loading About…</p>;
-  if (!about) return null;
+  /* ---------------- UPDATE HANDLER ---------------- */
+  const handleChange = (field, value) => {
+    setAbout((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   return (
     <div className="max-w-4xl space-y-6 h-screen">
       <h3 className="text-3xl font-bold">About Manager</h3>
 
-      {/* Editor */}
       <AboutEditor about={about} onChange={handleChange} />
 
-      {/* Actions */}
       <div className="flex gap-4">
         <button
-          type="button"
           onClick={saveAbout}
-          className="bg-green-600 text-white px-6 py-3 rounded"
+          className="bg-green-500 text-white p-3 rounded"
         >
           Save About
         </button>
 
-        {about.id && (
+        {about?.id && (
           <button
-            type="button"
             onClick={deleteAbout}
-            className="bg-red-600 text-white px-6 py-3 rounded"
+            className="bg-red-500 text-white p-3 rounded"
           >
             Delete About
           </button>

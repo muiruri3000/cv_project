@@ -1,13 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+import json
+
 from .models import (
     Profile,
     Experience,
-    About,
     Duty,
     Education,
     Skill,
+    About,
     AboutParagraph,
     CoreStrength,
     Hero,
@@ -21,14 +23,20 @@ from .models import (
     Article,
     UserProfile,
 )
-import json
 
+# =========================================================
+# DUTY
+# =========================================================
 
 class DutySerializer(serializers.ModelSerializer):
     class Meta:
         model = Duty
         fields = ["id", "description", "order"]
 
+
+# =========================================================
+# EXPERIENCE
+# =========================================================
 
 class ExperienceSerializer(serializers.ModelSerializer):
     duties = DutySerializer(many=True, required=False)
@@ -41,22 +49,32 @@ class ExperienceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         duties_data = validated_data.pop("duties", [])
         exp = Experience.objects.create(**validated_data)
+
         for i, duty in enumerate(duties_data):
+            duty.pop("order", None)
             Duty.objects.create(experience=exp, order=i, **duty)
+
         return exp
 
     def update(self, instance, validated_data):
         duties_data = validated_data.pop("duties", [])
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # Clear and recreate duties
         instance.duties.all().delete()
+
         for i, duty in enumerate(duties_data):
+            duty.pop("order", None)
             Duty.objects.create(experience=instance, order=i, **duty)
+
         return instance
 
+
+# =========================================================
+# SKILL
+# =========================================================
 
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -64,12 +82,20 @@ class SkillSerializer(serializers.ModelSerializer):
         fields = ["name"]
 
 
+# =========================================================
+# EDUCATION
+# =========================================================
+
 class EducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Education
         fields = "__all__"
         read_only_fields = ["profile"]
 
+
+# =========================================================
+# PROFILE
+# =========================================================
 
 class ProfileSerializer(serializers.ModelSerializer):
     experiences = ExperienceSerializer(many=True, read_only=True)
@@ -79,6 +105,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = "__all__"
 
+
+# =========================================================
+# ABOUT
+# =========================================================
 
 class AboutParagraphSerializer(serializers.ModelSerializer):
     class Meta:
@@ -126,19 +156,17 @@ class AboutSerializer(serializers.ModelSerializer):
         paragraphs_data = validated_data.pop("paragraphs", [])
         strengths_data = validated_data.pop("core_strengths", [])
 
-        # Update main About fields
         instance.headline = validated_data.get("headline", instance.headline)
         instance.summary = validated_data.get("summary", instance.summary)
         instance.save()
 
-        # Replace paragraphs
         instance.paragraphs.all().delete()
+        instance.core_strengths.all().delete()
+
         for i, p in enumerate(paragraphs_data):
-            p.pop("order", None)  # remove order if it exists
+            p.pop("order", None)
             AboutParagraph.objects.create(about=instance, order=i, **p)
 
-        # Replace core strengths
-        instance.core_strengths.all().delete()
         for i, s in enumerate(strengths_data):
             s.pop("order", None)
             CoreStrength.objects.create(about=instance, order=i, **s)
@@ -146,18 +174,30 @@ class AboutSerializer(serializers.ModelSerializer):
         return instance
 
 
+# =========================================================
+# HERO
+# =========================================================
+
 class HeroSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hero
         fields = "__all__"
 
 
+# =========================================================
+# FEATURED PROJECT
+# =========================================================
+
 class FeaturedProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeaturedProject
-        updated_at = serializers.ReadOnlyField()
         fields = "__all__"
+        read_only_fields = ["updated_at"]
 
+
+# =========================================================
+# SKILLS (CATEGORY)
+# =========================================================
 
 class SkillItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -189,17 +229,26 @@ class SkillCategorySerializer(serializers.ModelSerializer):
         instance.save()
 
         instance.skills.all().delete()
+
         for i, skill in enumerate(skills_data):
             SkillItem.objects.create(category=instance, order=i, **skill)
 
         return instance
 
 
+# =========================================================
+# SOFT SKILLS
+# =========================================================
+
 class SoftSkillSerializer(serializers.ModelSerializer):
     class Meta:
         model = SoftSkill
         fields = ["id", "skill", "description", "order"]
 
+
+# =========================================================
+# ARCHITECTURE
+# =========================================================
 
 class ArchitectureServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -230,23 +279,21 @@ class ArchitectureSerializer(serializers.ModelSerializer):
         ]
 
     def to_internal_value(self, data):
-        # Convert JSON strings into Python lists if necessary
+        data = data.copy()
+
         for key in ["services", "links"]:
             val = data.get(key)
-            if isinstance(val, list):
-                # Sometimes multipart sends repeated keys; take first
-                try:
-                    val = [json.loads(v) if isinstance(v, str) else v for v in val]
-                    data[key] = val[0] if len(val) == 1 else val
-                except Exception:
-                    data[key] = []
-            elif isinstance(val, str) and val.strip():
+
+            if isinstance(val, str) and val.strip():
                 try:
                     data[key] = json.loads(val)
                 except json.JSONDecodeError:
-                    data[key] = []
+                    raise serializers.ValidationError({key: "Invalid JSON format"})
+            elif isinstance(val, list):
+                data[key] = val
             else:
                 data[key] = []
+
         return super().to_internal_value(data)
 
     def create(self, validated_data):
@@ -255,16 +302,23 @@ class ArchitectureSerializer(serializers.ModelSerializer):
 
         architecture = Architecture.objects.create(**validated_data)
 
-        for idx, service in enumerate(services_data):
+        services_data = [s for s in services_data if s.get("name")]
+        links_data = [l for l in links_data if l.get("label") and l.get("href")]
+
+        for i, service in enumerate(services_data):
             service.pop("order", None)
             ArchitectureService.objects.create(
-                architecture=architecture, order=idx, **service
+                architecture=architecture,
+                order=i,
+                **service
             )
 
-        for idx, link in enumerate(links_data):
+        for i, link in enumerate(links_data):
             link.pop("order", None)
             ArchitectureLink.objects.create(
-                architecture=architecture, order=idx, **link
+                architecture=architecture,
+                order=i,
+                **link
             )
 
         return architecture
@@ -280,18 +334,31 @@ class ArchitectureSerializer(serializers.ModelSerializer):
         instance.services.all().delete()
         instance.links.all().delete()
 
-        for idx, service in enumerate(services_data):
+        services_data = [s for s in services_data if s.get("name")]
+        links_data = [l for l in links_data if l.get("label") and l.get("href")]
+
+        for i, service in enumerate(services_data):
             service.pop("order", None)
             ArchitectureService.objects.create(
-                architecture=instance, order=idx, **service
+                architecture=instance,
+                order=i,
+                **service
             )
 
-        for idx, link in enumerate(links_data):
+        for i, link in enumerate(links_data):
             link.pop("order", None)
-            ArchitectureLink.objects.create(architecture=instance, order=idx, **link)
+            ArchitectureLink.objects.create(
+                architecture=instance,
+                order=i,
+                **link
+            )
 
         return instance
 
+
+# =========================================================
+# ARTICLE
+# =========================================================
 
 class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -308,13 +375,16 @@ class ArticleSerializer(serializers.ModelSerializer):
         ]
 
 
+# =========================================================
+# AUTH
+# =========================================================
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["username"] = user.username
-        token["username"] = user.username
-        token["role"] = user.profile.role if hasattr(user, "profile") else None
+        token["role"] = getattr(user.profile, "role", None)
         return token
 
 
@@ -332,8 +402,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
+        return User.objects.create_user(**validated_data)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

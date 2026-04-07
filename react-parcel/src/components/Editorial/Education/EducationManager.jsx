@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import EducationEditor from "./EducationEditor";
+import { apiFetch } from "../../loginHelper/api";
 
 const createEmptyEducation = () => ({
   institution: "",
@@ -15,46 +16,47 @@ const EducationManager = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const API_URL = process.env.REACT_APP_API_URL
+
+  // ✅ Fetch
   useEffect(() => {
-    const fetchEducation = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_URL}/api/education/`);
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        setSavedEducation(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch education.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEducation();
   }, []);
+
+  const fetchEducation = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch("/api/education/");
+      setSavedEducation(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch education.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEditorChange = (field, value) => {
     setEditorForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // ✅ Save (POST / PUT)
   const saveEducation = async (edu) => {
     setLoading(true);
     setError(null);
-    try {
-      const method = edu.id ? "PUT" : "POST";
-      const url = edu.id
-        ? `${API_URL}/api/education/${edu.id}/`
-        : `${API_URL}/api/education/`;
 
-      const res = await fetch(url, {
+    const method = edu.id ? "PUT" : "POST";
+    const endpoint = edu.id
+      ? `/api/education/${edu.id}/`
+      : "/api/education/";
+
+    try {
+      const data = await apiFetch(endpoint, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(edu),
       });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+
+      return data;
     } catch (err) {
       console.error(err);
       setError("Failed to save education.");
@@ -73,6 +75,7 @@ const EducationManager = () => {
         ? prev.map((e, i) => (i === editingIndex ? saved : e))
         : [...prev, saved]
     );
+
     setEditorForm(createEmptyEducation());
     setEditingIndex(null);
   };
@@ -82,23 +85,28 @@ const EducationManager = () => {
     setEditingIndex(index);
   };
 
+  // ✅ Delete
   const deleteEntry = async (index) => {
     const edu = savedEducation[index];
+
     if (edu.id) {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/api/education/${edu.id}/`, {
+        await apiFetch(`/api/education/${edu.id}/`, {
           method: "DELETE",
         });
-        if (!res.ok) throw new Error("Delete failed");
       } catch (err) {
         console.error(err);
         setError("Failed to delete education.");
+        setLoading(false);
+        return;
       } finally {
         setLoading(false);
       }
     }
+
     setSavedEducation((prev) => prev.filter((_, i) => i !== index));
+
     if (editingIndex === index) {
       setEditorForm(createEmptyEducation());
       setEditingIndex(null);
@@ -143,6 +151,7 @@ const EducationManager = () => {
 
       <div className="mt-6">
         <h3 className="text-2xl font-bold">Saved Education</h3>
+
         {savedEducation.length === 0 && (
           <p className="text-gray-500">No education entries yet.</p>
         )}
@@ -153,14 +162,22 @@ const EducationManager = () => {
             className="flex justify-between items-center border-b py-2"
           >
             <span>
-              {edu.institution || "Institution"} — {edu.qualification || "Qualification"}
+              {edu.institution || "Institution"} —{" "}
+              {edu.qualification || "Qualification"}
             </span>
 
             <div className="flex gap-2">
-              <button onClick={() => editEntry(idx)} className="text-blue-600 text-sm">
+              <button
+                onClick={() => editEntry(idx)}
+                className="text-blue-600 text-sm"
+              >
                 Edit
               </button>
-              <button onClick={() => deleteEntry(idx)} className="text-red-600 text-sm">
+
+              <button
+                onClick={() => deleteEntry(idx)}
+                className="text-red-600 text-sm"
+              >
                 Delete
               </button>
             </div>

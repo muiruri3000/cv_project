@@ -1,23 +1,18 @@
 import { useEffect, useState } from "react";
-import FeaturedProjectEditor from "./Featured/FeaturedEditor";
-import { emptyProject } from "./Featured/FeaturedEditor";
-const API_UR = process.env.REACT_APP_API_URL
-const API_URL = `${API_UR}/api/featured-projects/`;
+import FeaturedProjectEditor, { emptyProject } from "./Featured/FeaturedEditor";
+import { apiFetch } from "../loginHelper/api";
 
 const FeaturedProjectManager = () => {
   const [projects, setProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all projects from backend
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  const API_URL = "/api/featured-projects/";
 
+  // ---------------- FETCH PROJECTS ----------------
   const fetchProjects = async () => {
     try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
+      const data = await apiFetch(API_URL);
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch projects:", err);
@@ -26,55 +21,59 @@ const FeaturedProjectManager = () => {
     }
   };
 
-const saveProject = async (project) => {
-  try {
-    // Remove read-only fields before sending to API
-    const payload = {
-      title: project.title,
-      description: project.description,
-      features: project.features,
-      demo_link: project.demo_link,
-      github: project.github,
-      is_featured: project.is_featured,
-      order: project.order,
-    };
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
-    const method = project.id ? "PATCH" : "POST";
-    const url = project.id ? `${API_URL}${project.id}/` : API_URL;
+  // ---------------- SAVE (CREATE / UPDATE) ----------------
+  const saveProject = async (project) => {
+    try {
+      const payload = {
+        title: project.title,
+        description: project.description,
+        features: project.features,
+        demo_link: project.demo_link,
+        github: project.github,
+        is_featured: project.is_featured,
+        order: project.order,
+      };
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+      const isEdit = Boolean(project.id);
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ detail: "Unknown error" }));
-      console.error("Validation error:", errorData);
-      alert("Failed to save project. Check console for details.");
-      return;
+      const url = isEdit
+        ? `${API_URL}${project.id}/`
+        : API_URL;
+
+      const method = isEdit ? "PATCH" : "POST";
+
+      await apiFetch(url, {
+        method,
+        body: JSON.stringify(payload),
+      });
+
+      await fetchProjects();
+      setEditingProject(null);
+    } catch (err) {
+      console.error("Failed to save project:", err);
     }
+  };
 
-    await fetchProjects();
-    setEditingProject(null);
-  } catch (err) {
-    console.error("Failed to save project:", err);
-  }
-};
-
-
-
+  // ---------------- DELETE ----------------
   const deleteProject = async (id) => {
     if (!window.confirm("Delete this project?")) return;
 
     try {
-      await fetch(`${API_URL}${id}/`, { method: "DELETE" });
+      await apiFetch(`${API_URL}${id}/`, {
+        method: "DELETE",
+      });
+
       fetchProjects();
     } catch (err) {
       console.error("Failed to delete project:", err);
     }
   };
 
+  // ---------------- UI ----------------
   return (
     <div className="max-w-5xl space-y-8 h-screen">
       <h2 className="text-3xl font-bold">Featured Projects</h2>
@@ -103,10 +102,15 @@ const saveProject = async (project) => {
               <h4 className="font-medium">
                 {p.title}{" "}
                 {p.is_featured && (
-                  <span className="text-xs text-green-600">(Featured)</span>
+                  <span className="text-xs text-green-600">
+                    (Featured)
+                  </span>
                 )}
               </h4>
-              <p className="text-sm text-gray-600">{p.description}</p>
+
+              <p className="text-sm text-gray-600">
+                {p.description}
+              </p>
 
               {p.features && (
                 <ul className="text-sm mt-2 list-disc list-inside font-mono">
@@ -124,6 +128,7 @@ const saveProject = async (project) => {
               >
                 Edit
               </button>
+
               <button
                 onClick={() => deleteProject(p.id)}
                 className="text-red-600 text-sm"

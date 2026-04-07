@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import SoftSkillsEditor from "./SoftSkillsEditor";
+import { apiFetch } from "../../components/loginHelper/api";
 
 const createEmptySoftSkill = () => ({
   id: null,
@@ -7,33 +8,29 @@ const createEmptySoftSkill = () => ({
   description: "",
   order: 0,
 });
-const API_UR = process.env.REACT_APP_API_URL
-const API_URL = `${API_UR}/api/soft-skills/`;
 
 const SoftSkillsManager = () => {
   const [skills, setSkills] = useState([]);
   const [editingSkill, setEditingSkill] = useState(createEmptySoftSkill());
   const [loading, setLoading] = useState(true);
 
-  /* ---------- Fetch skills from backend ---------- */
+  /* ---------- Fetch ---------- */
   useEffect(() => {
     fetchSkills();
   }, []);
 
   const fetchSkills = async () => {
     try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error("Failed to fetch soft skills");
-      const data = await res.json();
+      const data = await apiFetch("/api/soft-skills/");
       setSkills(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch soft skills:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------- Handle field change from editor ---------- */
+  /* ---------- Handle Change ---------- */
   const handleChange = (field, value) => {
     setEditingSkill((prev) => ({
       ...prev,
@@ -41,61 +38,59 @@ const SoftSkillsManager = () => {
     }));
   };
 
-  /* ---------- Save (create or update) ---------- */
-const saveSkill = async () => {
-  if (!editingSkill.skill?.trim()) return;
+  /* ---------- Save ---------- */
+  const saveSkill = async () => {
+    if (!editingSkill.skill?.trim()) return;
 
-  const payload = {
-    skill: editingSkill.skill,
-    description: editingSkill.description ?? "",
-    order: editingSkill.order ?? skills.length,
+    const payload = {
+      skill: editingSkill.skill,
+      description: editingSkill.description ?? "",
+      order: editingSkill.order ?? skills.length,
+    };
+
+    const method = editingSkill.id ? "PATCH" : "POST";
+    const endpoint = editingSkill.id
+      ? `/api/soft-skills/${editingSkill.id}/`
+      : "/api/soft-skills/";
+
+    try {
+      const updated = await apiFetch(endpoint, {
+        method,
+        body: JSON.stringify(payload),
+      });
+
+      setSkills((prev) => {
+        const exists = prev.some((s) => s.id === updated.id);
+
+        if (exists) {
+          return prev.map((s) => (s.id === updated.id ? updated : s));
+        } else {
+          return [...prev, updated];
+        }
+      });
+
+      setEditingSkill(createEmptySoftSkill());
+    } catch (err) {
+      console.error("Failed to save skill:", err);
+    }
   };
 
-  const method = editingSkill.id ? "PATCH" : "POST";
-  const url = editingSkill.id
-    ? `${API_URL}${editingSkill.id}/`
-    : API_URL;
-
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Server error:", text);
-      return;
-    }
-
-    const updated = await res.json();
-
-    setSkills(prev => {
-      const exists = prev.some(s => s.id === updated.id);
-
-      if (exists) {
-        return prev.map(s => (s.id === updated.id ? updated : s));
-      } else {
-        return [...prev, updated];
-      }
-    });
-
-    setEditingSkill(createEmptySoftSkill());
-  } catch (err) {
-    console.error("Unexpected error:", err);
-  }
-};
-
-
+  /* ---------- Delete ---------- */
   const deleteSkill = async (id) => {
     if (!window.confirm("Delete this soft skill?")) return;
+
     try {
-      await fetch(`${API_URL}${id}/`, { method: "DELETE" });
-      await fetchSkills();
-      if (editingSkill.id === id) setEditingSkill(createEmptySoftSkill());
+      await apiFetch(`/api/soft-skills/${id}/`, {
+        method: "DELETE",
+      });
+
+      setSkills((prev) => prev.filter((s) => s.id !== id));
+
+      if (editingSkill.id === id) {
+        setEditingSkill(createEmptySoftSkill());
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to delete skill:", err);
       alert("Failed to delete skill");
     }
   };
@@ -110,12 +105,11 @@ const saveSkill = async () => {
       <SoftSkillsEditor
         softSkill={editingSkill}
         onChange={handleChange}
-      /> 
+      />
 
-      {/* Action Buttons */}
+      {/* Actions */}
       <div className="flex gap-4 mt-2">
         <button
-          type="button"
           onClick={saveSkill}
           className="bg-green-500 text-white p-3 rounded"
         >
@@ -123,7 +117,6 @@ const saveSkill = async () => {
         </button>
 
         <button
-          type="button"
           onClick={() => setEditingSkill(createEmptySoftSkill())}
           className="bg-blue-400 text-white p-3 rounded"
         >
@@ -134,6 +127,7 @@ const saveSkill = async () => {
       {/* List */}
       <div className="mt-6">
         <h3 className="text-2xl font-bold">Saved Soft Skills</h3>
+
         {skills.length === 0 && (
           <p className="text-gray-500">No soft skills added yet.</p>
         )}
@@ -145,16 +139,19 @@ const saveSkill = async () => {
           >
             <div>
               <h4 className="font-semibold">{skill.skill}</h4>
-              <p className="text-gray-600 text-sm">{skill.description}</p>
+              <p className="text-gray-600 text-sm">
+                {skill.description}
+              </p>
             </div>
 
             <div className="flex gap-2">
               <button
-                onClick={() => setEditingSkill({...skill})} // populate editor
+                onClick={() => setEditingSkill({ ...skill })}
                 className="text-blue-600 text-sm"
               >
                 Edit
               </button>
+
               <button
                 onClick={() => deleteSkill(skill.id)}
                 className="text-red-600 text-sm"
@@ -166,7 +163,6 @@ const saveSkill = async () => {
         ))}
       </div>
     </div>
-
   );
 };
 

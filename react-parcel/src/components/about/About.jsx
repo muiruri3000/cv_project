@@ -21,7 +21,7 @@ const About = () => {
   if (!content) return null;
 
   return (
-    <section id="about" className="bg-white  mb-4 py-6">
+    <section id="about" className="bg-red-100  mb-4 py-6 ">
       <div className="mx-auto max-w-6xl px-6 py-20 shadow-md bg-white" style={{border: "1px solid #d1d5db"}}>
         <h2 className="text-3xl text-center font-extrabold tracking-tight">
           {content.headline}

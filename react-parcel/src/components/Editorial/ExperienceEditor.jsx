@@ -38,6 +38,7 @@ const ExperienceEditor = ({ experience, index, onChange, onDelete }) => {
 
       <div className="flex gap-2">
         <input
+        type="date"
           value={experience.start_date || ""}
           onChange={(e) => handleFieldChange(e, "start_date")}
           placeholder="Start Date"
@@ -45,6 +46,7 @@ const ExperienceEditor = ({ experience, index, onChange, onDelete }) => {
         />
         <input
           value={experience.end_date || ""}
+          type="date"
           onChange={(e) => handleFieldChange(e, "end_date")}
           placeholder="End Date"
           className="w-full p-2 bg-white rounded"

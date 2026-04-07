@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const emptyHero = {
   heading: "",
   subheading: "",
-  ctaText: ""
+  cta_text: ""
 };
 
 const HeroEditor = ({ initialData, onSave, onCancel }) => {
@@ -14,7 +14,7 @@ const HeroEditor = ({ initialData, onSave, onCancel }) => {
       setForm({
         heading: initialData.heading || "",
         subheading: initialData.subheading || "",
-        ctaText: initialData.cta_text || "",
+        cta_text: initialData.cta_text || "",
         id: initialData.id || undefined,
       });
     } else {
@@ -32,7 +32,7 @@ const HeroEditor = ({ initialData, onSave, onCancel }) => {
     // Transform to backend shape
     onSave({
       ...form,
-      cta_text: form.ctaText,
+      cta_text: form.cta_text,
     });
   };
 
@@ -59,8 +59,8 @@ const HeroEditor = ({ initialData, onSave, onCancel }) => {
       />
 
       <input
-        name="ctaText"
-        value={form.ctaText}
+        name="cta_text"
+        value={form.cta_text}
         onChange={handleChange}
         placeholder="CTA Text"
         className="w-full border p-2"

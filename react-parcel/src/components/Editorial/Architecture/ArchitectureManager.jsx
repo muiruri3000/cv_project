@@ -1,36 +1,50 @@
 import { useEffect, useState } from "react";
 import ArchitectureEditor from "../ArchitectureEditor";
+import { customApi } from "../../../helpers/customImageFormsAPI";
+import { form } from "framer-motion/client";
+
+/* ---------------- SLUG HELPER ---------------- */
+const slugify = (text) =>
+  text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
+    .replace(/\s+/g, "-") // spaces → hyphens
+    .replace(/-+/g, "-"); // collapse dashes
 
 const emptyArchitecture = () => ({
   title: "",
+  slug: "",
   description: "",
   image: null,
   services: [{ name: "" }],
   links: [{ label: "", href: "" }],
 });
-const API_URL = process.env.REACT_APP_API_URL;
+
 const ArchitectureManager = () => {
   const [architectures, setArchitectures] = useState([]);
   const [editorForm, setEditorForm] = useState(emptyArchitecture());
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all architectures from backend
+  /* ---------------- FETCH ---------------- */
   const fetchArchitectures = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/architectures/`);
-      if (!response.ok) throw new Error("Failed to fetch architectures");
-      const data = await response.json();
-      // Ensure services and links arrays exist
+
+      const data = await customApi("/api/architectures/");
+
       const transformed = data.map((arch) => ({
         ...arch,
         services: arch.services || [{ name: "" }],
         links: arch.links || [{ label: "", href: "" }],
       }));
+
       setArchitectures(transformed);
     } catch (error) {
       console.error("Error fetching architectures:", error);
+      setArchitectures([]);
     } finally {
       setLoading(false);
     }
@@ -40,41 +54,57 @@ const ArchitectureManager = () => {
     fetchArchitectures();
   }, []);
 
-  // Save new or updated architecture
+  /* ---------------- HANDLE TITLE CHANGE (AUTO SLUG) ---------------- */
+  const handleChange = (updated) => {
+    setEditorForm((prev) => {
+      const newTitle =
+        updated.title !== undefined ? updated.title : prev.title;
+
+      return {
+        ...prev,
+        ...updated,
+        slug: slugify(newTitle),
+      };
+    });
+  };
+
+  /* ---------------- SAVE ---------------- */
   const saveArchitecture = async () => {
     try {
       setLoading(true);
-      const url = editingId
-        ? `${API_URL}/api/architectures/${editingId}/`
-        : `${API_URL}/api/architectures/`;
-      const method = editingId ? "PUT" : "POST";
+
+      const isEditing = Boolean(editingId);
 
       const formData = new FormData();
       formData.append("title", editorForm.title);
+      formData.append("slug", editorForm.slug); // ✅ added slug
       formData.append("description", editorForm.description);
+
       if (editorForm.image instanceof File) {
         formData.append("image", editorForm.image);
       }
+
       formData.append("services", JSON.stringify(editorForm.services));
       formData.append("links", JSON.stringify(editorForm.links));
 
-      const response = await fetch(url, {
-        method,
-        body: formData,
-      });
-      if (!response.ok) throw new Error("Failed to save architecture");
-      const saved = await response.json();
+      const saved = await customApi(
+        isEditing
+          ? `/api/architectures/${editingId}/`
+          : "/api/architectures/",
+        {
+          method: isEditing ? "PUT" : "POST",
+          body: formData,
+          headers: {},
+        }
+      );
 
-      // Update local state
-      if (editingId) {
-        setArchitectures((prev) =>
-          prev.map((a) => (a.id === editingId ? saved : a))
-        );
-      } else {
-        setArchitectures((prev) => [saved, ...prev]); // newest first
-      }
+      console.log("saving form data", formData);
+      setArchitectures((prev) =>
+        isEditing
+          ? prev.map((a) => (a.id === editingId ? saved : a))
+          : [saved, ...prev]
+      );
 
-      // Reset form
       setEditorForm(emptyArchitecture());
       setEditingId(null);
     } catch (error) {
@@ -84,8 +114,13 @@ const ArchitectureManager = () => {
     }
   };
 
+  /* ---------------- EDIT ---------------- */
   const editArchitecture = (arch) => {
-    setEditorForm(arch);
+    setEditorForm({
+      ...arch,
+      services: arch.services || [{ name: "" }],
+      links: arch.links || [{ label: "", href: "" }],
+    });
     setEditingId(arch.id);
   };
 
@@ -94,16 +129,18 @@ const ArchitectureManager = () => {
     setEditingId(null);
   };
 
+  /* ---------------- DELETE ---------------- */
   const deleteArchitecture = async (arch) => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${API_URL}/api/architectures/${arch.id}/`,
-        { method: "DELETE" }
-      );
-      if (!response.ok) throw new Error("Failed to delete architecture");
 
-      setArchitectures((prev) => prev.filter((a) => a.id !== arch.id));
+      await customApi(`/api/architectures/${arch.id}/`, {
+        method: "DELETE",
+      });
+
+      setArchitectures((prev) =>
+        prev.filter((a) => a.id !== arch.id)
+      );
 
       if (editingId === arch.id) {
         setEditorForm(emptyArchitecture());
@@ -116,11 +153,15 @@ const ArchitectureManager = () => {
     }
   };
 
+  /* ---------------- UI ---------------- */
   return (
     <div className="space-y-6 max-w-4xl h-screen">
       <h3 className="text-3xl font-bold">Architectures</h3>
 
-      <ArchitectureEditor architecture={editorForm} onChange={setEditorForm} />
+      <ArchitectureEditor
+        architecture={editorForm}
+        onChange={handleChange}
+      />
 
       <div className="flex gap-3">
         <button
@@ -142,7 +183,9 @@ const ArchitectureManager = () => {
         </button>
       </div>
 
-      {loading && <p className="text-gray-500 mt-2">Loading...</p>}
+      {loading && (
+        <p className="text-gray-500 mt-2">Loading...</p>
+      )}
 
       <div className="space-y-2 mt-4">
         {architectures.length === 0 && !loading && (
@@ -155,6 +198,7 @@ const ArchitectureManager = () => {
             className="flex justify-between items-center border-b py-2"
           >
             <span>{arch.title || "Untitled"}</span>
+
             <div className="flex gap-2">
               <button
                 onClick={() => editArchitecture(arch)}
@@ -162,6 +206,7 @@ const ArchitectureManager = () => {
               >
                 Edit
               </button>
+
               <button
                 onClick={() => deleteArchitecture(arch)}
                 className="text-red-600 text-sm"
