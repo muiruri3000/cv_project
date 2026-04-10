@@ -3,6 +3,14 @@ from django.contrib.auth.models import User
 
 
 class Profile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="user_profile",
+        null=True,
+        blank=True,
+    )
+
     name = models.CharField(max_length=120)
     title = models.CharField(max_length=120)
     interestStatement = models.TextField()

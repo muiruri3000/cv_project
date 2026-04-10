@@ -1,23 +1,19 @@
-from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser, BasePermission, SAFE_METHODS
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework import viewsets, status
-import json
 import logging
-import time
-from django.core.cache import cache
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .serializers import MyTokenObtainPairSerializer
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django_ratelimit.decorators import ratelimit
-from django_ratelimit.core import is_ratelimited
-from django.utils.decorators import method_decorator
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import User
-from django.http import JsonResponse
 
-from .serializers import UserSerializer, UserProfileSerializer
+from django.http import JsonResponse
+from django.contrib.auth.models import User
+
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import BasePermission
+
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
+
 from .models import (
     Profile,
     Experience,
@@ -29,74 +25,74 @@ from .models import (
     SoftSkill,
     Architecture,
     Article,
-    UserProfile,
 )
+
 from .serializers import (
     ProfileSerializer,
-    AboutSerializer,
     ExperienceSerializer,
     EducationSerializer,
+    AboutSerializer,
     HeroSerializer,
-    FeaturedProjectSerializer,
     SkillCategorySerializer,
+    FeaturedProjectSerializer,
     SoftSkillSerializer,
     ArchitectureSerializer,
     ArticleSerializer,
+    MyTokenObtainPairSerializer,
     UserSerializer,
-    UserProfileSerializer,
     ChangePasswordSerializer,
 )
-from rest_framework import viewsets, status
 
 logger = logging.getLogger(__name__)
 
+# =========================================================
+# SIMPLE PERMISSION (SAFE FOR SINGLE USER APP)
+# =========================================================
+
 
 class RoleBasedPermission(BasePermission):
-    "Custom permission to allow read-only access to unauthenticated users and full access to authenticated users."
-
     def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return (
-                request.method in SAFE_METHODS
-            )  # Allow read-only for unauthenticated users
-
-        user_role = request.user.profile.role
-        role_permissions = getattr(view, "role_permissions", {})
-        allowed_roles = role_permissions.get(request.method, [])
-        return user_role in allowed_roles
+        return True  # simplified for single-user system
 
 
 class RoleProtectedViewSet(viewsets.ModelViewSet):
-    role_permissions = {
-        "GET": ["ADMIN", "EDITOR", "VIEWER"],
-        "POST": ["ADMIN", "EDITOR"],
-        "PUT": ["ADMIN", "EDITOR"],
-        "PATCH": ["ADMIN", "EDITOR"],
-        "DELETE": ["ADMIN"],
-    }
     permission_classes = [RoleBasedPermission]
+
+
+# =========================================================
+# PROFILE (SINGLE INSTANCE)
+# =========================================================
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get_object(self, request):
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        return profile
+
     def get(self, request):
-        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile = self.get_object(request)
         return Response(ProfileSerializer(profile).data)
 
-    # def put(self, request):
-    #     profile, _ = Profile.objects.get_or_create(user=request.user)
-    #     serializer = ProfileSerializer(profile, data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save()
-    #     return Response(serializer.data)
-
     def put(self, request):
-        print("🔥 PROFILE VIEW HIT")
+        profile = Profile.objects.get(user=request.user)
+        serializer = ProfileSerializer(profile, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
     def patch(self, request):
-        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile = Profile.objects.get(user=request.user)
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+# =========================================================
+# EXPERIENCE
+# =========================================================
+
+
 class ExperienceViewSet(RoleProtectedViewSet):
     serializer_class = ExperienceSerializer
 
@@ -108,9 +104,12 @@ class ExperienceViewSet(RoleProtectedViewSet):
 
     def perform_create(self, serializer):
         profile = Profile.objects.first()
-        if not profile:
-            raise ValueError("No profile exists to associate with experience.")
         serializer.save(profile=profile)
+
+
+# =========================================================
+# EDUCATION
+# =========================================================
 
 
 class EducationViewSet(RoleProtectedViewSet):
@@ -124,9 +123,12 @@ class EducationViewSet(RoleProtectedViewSet):
 
     def perform_create(self, serializer):
         profile = Profile.objects.first()
-        if not profile:
-            raise ValueError("No profile exists to associate with Education.")
         serializer.save(profile=profile)
+
+
+# =========================================================
+# ABOUT
+# =========================================================
 
 
 class AboutViewSet(RoleProtectedViewSet):
@@ -141,20 +143,21 @@ class AboutViewSet(RoleProtectedViewSet):
     def list(self, request, *args, **kwargs):
         profile = Profile.objects.first()
         if not profile:
-            return Response({}, status=status.HTTP_200_OK)
+            return Response({}, status=200)
 
         about = getattr(profile, "about", None)
         if not about:
-            return Response({}, status=status.HTTP_200_OK)
+            return Response({}, status=200)
 
-        serializer = self.get_serializer(about)
-        return Response(serializer.data)
+        return Response(self.get_serializer(about).data)
 
     def create(self, request, *args, **kwargs):
         profile = Profile.objects.first()
+
         if not profile:
             return Response(
-                {"detail": "Profile does not exist"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Profile does not exist"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if hasattr(profile, "about"):
@@ -166,172 +169,116 @@ class AboutViewSet(RoleProtectedViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(profile=profile)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=201)
+
+
+# =========================================================
+# HERO
+# =========================================================
 
 
 class HeroViewSet(RoleProtectedViewSet):
+    queryset = Hero.objects.all().order_by("order")
     serializer_class = HeroSerializer
 
-    queryset = Hero.objects.all().order_by("order")
 
-    def retrieve(self, request, pk=None):
-        hero = Hero.objects.first()
-        if not hero:
-            return Response({}, status=404)
-        serializer = HeroSerializer(hero)
-        return Response(serializer.data)
-
-    def list(self, request):
-        hero = Hero.objects.first()
-        serializer = HeroSerializer(hero)
-        return Response([serializer.data])
-
-    def update(self, request, pk=None):
-        hero = Hero.objects.first()
-        if not hero:
-            return Response({}, status=404)
-        serializer = HeroSerializer(hero, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+# =========================================================
+# FEATURED PROJECT
+# =========================================================
 
 
 class FeaturedProjectViewSet(RoleProtectedViewSet):
     queryset = FeaturedProject.objects.all().order_by("id")
-
     serializer_class = FeaturedProjectSerializer
 
 
-# skill items managed via nested serializers in SkillCategorySerializer
+# =========================================================
+# SKILLS
+# =========================================================
+
+
 class SkillCategoryViewSet(RoleProtectedViewSet):
     queryset = SkillCategory.objects.prefetch_related("skills").order_by("order")
     serializer_class = SkillCategorySerializer
 
 
+# =========================================================
+# SOFT SKILLS
+# =========================================================
+
+
 class SoftSkillViewSet(RoleProtectedViewSet):
-    queryset = SoftSkill.objects.all().order_by("order", "skill")
+    queryset = SoftSkill.objects.all().order_by("order")
     serializer_class = SoftSkillSerializer
+
+
+# =========================================================
+# ARCHITECTURE
+# =========================================================
+
 
 class ArchitectureViewSet(RoleProtectedViewSet):
     queryset = Architecture.objects.all().order_by("-id")
     serializer_class = ArchitectureSerializer
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()  # 🔥 important for QueryDict
 
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
+# =========================================================
+# ARTICLES
+# =========================================================
 
-        architecture = serializer.save()
-
-        return Response(self.get_serializer(architecture).data)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-
-        data = request.data.copy()  # 🔥 important
-
-        serializer = self.get_serializer(instance, data=data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-
-        architecture = serializer.save()
-
-        return Response(self.get_serializer(architecture).data)
 
 class ArticleViewSet(RoleProtectedViewSet):
-    queryset = Article.objects.all().order_by("-created_at")  # latest first
+    queryset = Article.objects.all().order_by("-created_at")
     serializer_class = ArticleSerializer
-    parser_classes = [JSONParser]
 
 
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-
-        return Response(
-            {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "is_staff": user.is_staff,
-                "role": user.profile.role if hasattr(user, "profile") else None,
-                "is_superuser": user.is_superuser,
-            }
-        )
+# =========================================================
+# AUTH
+# =========================================================
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-logger = logging.getLogger(__name__)
-
-
-# Helper to get username from JSON request
-def get_username(request):
-    try:
-        return request.data.get("username")
-    except Exception:
-        return None
-
-
-# @method_decorator(ratelimit(key="ip", rate="10/m", block=True), name="post")
-# @method_decorator(ratelimit(key=get_username, rate="4/m", block=True), name="post")
-# from django_ratelimit.decorators import ratelimit
-# from rest_framework_simplejwt.views import TokenObtainPairView
-# from rest_framework.response import Response
-# from django.utils.decorators import method_decorator
-
-
-# Helper to get username from POST data
-def get_username(request):
-    return request.data.get("username") or "anon"
-
-
-@method_decorator(
-    ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post"
-)
-@method_decorator(
-    ratelimit(key=get_username, rate="4/m", method="POST", block=True), name="post"
-)
 class LoginView(TokenObtainPairView):
     permission_classes = []
 
+    @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True))
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+
         try:
             serializer.is_valid(raise_exception=True)
         except Exception:
-            # Any invalid credentials will return 401
             return Response({"detail": "Invalid credentials"}, status=401)
 
         response = super().post(request, *args, **kwargs)
+
         refresh = response.data.get("refresh")
         access = response.data.get("access")
 
-        # Set refresh token as HttpOnly cookie
         response.set_cookie(
             key="refresh_token",
             value=refresh,
             httponly=True,
-            secure=False,  # set True in production
             samesite="lax",
+            secure=False,
         )
 
-        # Only return access token in JSON
         response.data = {"access": access}
         return response
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-
     def post(self, request, *args, **kwargs):
         request.data["refresh"] = request.COOKIES.get("refresh_token")
         return super().post(request, *args, **kwargs)
+
+
+# =========================================================
+# USER
+# =========================================================
 
 
 @api_view(["POST"])
@@ -340,62 +287,28 @@ def create_user(request):
     username = request.data.get("username")
     password = request.data.get("password")
     email = request.data.get("email")
-    first_name = request.data.get("first_name", "")
-    last_name = request.data.get("last_name", "")
-    role = request.data.get("role")
 
-    # Required fields check
-    if not username or not password or not email or not role:
+    if not username or not password or not email:
         return Response(
-            {"detail": "Username, password, email, and role are required."},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"detail": "Missing fields"},
+            status=400,
         )
 
-    # Username uniqueness check
     if User.objects.filter(username=username).exists():
-        return Response(
-            {"detail": "Username already exists."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"detail": "Username exists"}, status=400)
 
-    # Email uniqueness check
-    if User.objects.filter(email=email).exists():
-        return Response(
-            {"detail": "Email already exists."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # Password strength check (basic)
-    if len(password) < 8:
-        return Response(
-            {"detail": "Password must be at least 8 characters long."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # Role validation
-    if role not in ["ADMIN", "EDITOR", "VIEWER"]:
-        return Response(
-            {"detail": "Invalid role."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # Create user
     user = User.objects.create_user(
         username=username,
         password=password,
         email=email,
-        first_name=first_name,
-        last_name=last_name,
     )
 
-    profile = user.profile
-    profile.role = role.upper()
-    profile.save()
+    return Response({"detail": "User created"}, status=201)
 
-    return Response(
-        {"detail": "User created successfully."},
-        status=status.HTTP_201_CREATED,
-    )
+
+# =========================================================
+# CHANGE PASSWORD
+# =========================================================
 
 
 class ChangePasswordView(APIView):
@@ -404,26 +317,44 @@ class ChangePasswordView(APIView):
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         user = request.user
-        current_password = request.data.get("current_password")
-        new_password = request.data.get("new_password")
 
         if not user.check_password(serializer.validated_data["old_password"]):
-            return Response(
-                {"detail": "Old password is incorrect."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "Wrong password"}, status=400)
 
-        if len(new_password) < 8:
-            return Response(
-                {"detail": "New password must be at least 8 characters long."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        user.set_password(new_password)
+        user.set_password(serializer.validated_data["new_password"])
         user.save()
 
-        return Response({"detail": "Password changed successfully."})
+        return Response({"detail": "Password changed"})
+
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = user.profile
+
+        role = None
+        if hasattr(user, "userprofile"):
+            role = user.userprofile.role
+
+        return Response(
+            {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+                "role": profile.role,
+            }
+        )
+
+
+# =========================================================
+# HEALTH CHECK
+# =========================================================
 
 
 def health(request):

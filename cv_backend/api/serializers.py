@@ -21,12 +21,24 @@ from .models import (
     ArchitectureService,
     ArchitectureLink,
     Article,
-    UserProfile,
 )
 
 # =========================================================
 # DUTY
 # =========================================================
+
+
+# ME Serializer
+class MeSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "role"]
+
+    def get_role(self, obj):
+        return getattr(obj.userprofile, "role", None)
+
 
 class DutySerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,6 +49,7 @@ class DutySerializer(serializers.ModelSerializer):
 # =========================================================
 # EXPERIENCE
 # =========================================================
+
 
 class ExperienceSerializer(serializers.ModelSerializer):
     duties = DutySerializer(many=True, required=False)
@@ -73,8 +86,9 @@ class ExperienceSerializer(serializers.ModelSerializer):
 
 
 # =========================================================
-# SKILL
+# SKILL (simple)
 # =========================================================
+
 
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -86,6 +100,7 @@ class SkillSerializer(serializers.ModelSerializer):
 # EDUCATION
 # =========================================================
 
+
 class EducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Education
@@ -94,8 +109,9 @@ class EducationSerializer(serializers.ModelSerializer):
 
 
 # =========================================================
-# PROFILE
+# PROFILE (NO USER RELATION LOGIC HERE)
 # =========================================================
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     experiences = ExperienceSerializer(many=True, read_only=True)
@@ -109,6 +125,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 # =========================================================
 # ABOUT
 # =========================================================
+
 
 class AboutParagraphSerializer(serializers.ModelSerializer):
     class Meta:
@@ -178,6 +195,7 @@ class AboutSerializer(serializers.ModelSerializer):
 # HERO
 # =========================================================
 
+
 class HeroSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hero
@@ -188,6 +206,7 @@ class HeroSerializer(serializers.ModelSerializer):
 # FEATURED PROJECT
 # =========================================================
 
+
 class FeaturedProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeaturedProject
@@ -196,8 +215,9 @@ class FeaturedProjectSerializer(serializers.ModelSerializer):
 
 
 # =========================================================
-# SKILLS (CATEGORY)
+# SKILL CATEGORY SYSTEM
 # =========================================================
+
 
 class SkillItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -240,6 +260,7 @@ class SkillCategorySerializer(serializers.ModelSerializer):
 # SOFT SKILLS
 # =========================================================
 
+
 class SoftSkillSerializer(serializers.ModelSerializer):
     class Meta:
         model = SoftSkill
@@ -249,6 +270,7 @@ class SoftSkillSerializer(serializers.ModelSerializer):
 # =========================================================
 # ARCHITECTURE
 # =========================================================
+
 
 class ArchitectureServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -308,18 +330,12 @@ class ArchitectureSerializer(serializers.ModelSerializer):
         for i, service in enumerate(services_data):
             service.pop("order", None)
             ArchitectureService.objects.create(
-                architecture=architecture,
-                order=i,
-                **service
+                architecture=architecture, order=i, **service
             )
 
         for i, link in enumerate(links_data):
             link.pop("order", None)
-            ArchitectureLink.objects.create(
-                architecture=architecture,
-                order=i,
-                **link
-            )
+            ArchitectureLink.objects.create(architecture=architecture, order=i, **link)
 
         return architecture
 
@@ -340,18 +356,12 @@ class ArchitectureSerializer(serializers.ModelSerializer):
         for i, service in enumerate(services_data):
             service.pop("order", None)
             ArchitectureService.objects.create(
-                architecture=instance,
-                order=i,
-                **service
+                architecture=instance, order=i, **service
             )
 
         for i, link in enumerate(links_data):
             link.pop("order", None)
-            ArchitectureLink.objects.create(
-                architecture=instance,
-                order=i,
-                **link
-            )
+            ArchitectureLink.objects.create(architecture=instance, order=i, **link)
 
         return instance
 
@@ -359,6 +369,7 @@ class ArchitectureSerializer(serializers.ModelSerializer):
 # =========================================================
 # ARTICLE
 # =========================================================
+
 
 class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -379,12 +390,12 @@ class ArticleSerializer(serializers.ModelSerializer):
 # AUTH
 # =========================================================
 
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["username"] = user.username
-        token["role"] = getattr(user.profile, "role", None)
         return token
 
 
@@ -399,16 +410,10 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "password",
         ]
-        extra_kwargs = {"password": {"write_only": True}}
+        extra_kwargs = {"password": {"write_only": True, "required": True}}
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ["id", "role", "user"]
 
 
 class ChangePasswordSerializer(serializers.Serializer):

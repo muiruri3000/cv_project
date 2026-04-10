@@ -5,11 +5,11 @@ const RequireRole = ({allowedRoles, children}) => {
     const {user} = useAuth()
 
  
-    if(!allowedRoles.includes(user.role)){
-        return (
-            <Navigate to="/unauthorized" replace/>
-        );
-    }
+    // if(!allowedRoles.includes(user.role)){
+    //     return (
+    //         <Navigate to="/unauthorized" replace/>
+    //     );
+    // }
     return children
 }
 

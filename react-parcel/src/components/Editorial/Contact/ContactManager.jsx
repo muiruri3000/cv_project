@@ -22,33 +22,25 @@ const ProfileManager = () => {
   }, []);
 
   // ---------------- SAVE PROFILE ----------------
-  const saveEntry = async () => {
-    const hasId = Boolean(profile?.id);
+ const saveEntry = async () => {
+  try {
+    const payload = { ...profile };
 
-    const url = hasId
-      ? `${API_URL}${profile.id}/`
-      : API_URL;
+    // safety: never send id
+    delete payload.id;
 
-    const method = hasId ? "PUT" : "POST";
+    const savedProfile = await apiFetch(`${API_URL}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
 
-    try {
-      const payload = {
-        ...profile,
-      };
-
-      const savedProfile = await apiFetch(url, {
-        method,
-        body: JSON.stringify(payload),
-      });
-
-      setProfile(savedProfile);
-
-      alert("Profile saved successfully!");
-    } catch (err) {
-      console.error("Error saving profile:", err);
-      alert("An unexpected error occurred while saving the profile.");
-    }
-  };
+    setProfile(savedProfile);
+    alert("Profile saved successfully!");
+  } catch (err) {
+    console.error("Error saving profile:", err);
+    alert("An unexpected error occurred while saving the profile.");
+  }
+};
 
   return (
     <div className="max-w-4xl space-y-6 h-screen">

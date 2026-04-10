@@ -2,7 +2,6 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .views import (
     ArticleViewSet,
-    PublicProfileViewSet,
     ExperienceViewSet,
     AboutViewSet,
     EducationViewSet,
@@ -18,7 +17,6 @@ from .views import (
 from django.urls import path
 
 router = DefaultRouter()
-# router.register("profile", PublicProfileViewSet, basename="profile")
 router.register("experiences", ExperienceViewSet, basename="experiences")
 router.register("education", EducationViewSet, basename="education")
 router.register("about", AboutViewSet, basename="about")
@@ -35,7 +33,6 @@ urlpatterns = router.urls + [
     path("me/", MeView.as_view(), name="me"),
     path("create-user/", views.create_user, name="create_user"),
     path("profile/", ProfileView.as_view(), name="profile"),
-    
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("health/", views.health, name="health"),
 ]
