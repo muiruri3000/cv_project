@@ -1,6 +1,5 @@
 import { useState,useEffect } from "react"
-
-
+import { apiFetch } from "./../loginHelper/api"
 const Contact = () => {
     const [profile,setProfile] = useState(
       {
@@ -12,18 +11,16 @@ const Contact = () => {
         resumeLink:''
     }
     )
-    const API_URL = process.env.REACT_APP_API_URL
+    const API_URL = '/api/profile/'
 
     useEffect(()=>{
       const fetchProfile = async () => {
         try {
-          const res = await fetch(`${API_URL}/api/profile/`)
-          if (res.ok) {
-            const data = await res.json()
+          const data = await apiFetch(API_URL)
+         
+
+            console.log("Fetched profile:", data)
             setProfile(data)
-          } else {
-            console.error("Failed to fetch profile", { status: res.status })
-            }
           } catch (err) {
             console.error("Error fetching profile:", err)
           }

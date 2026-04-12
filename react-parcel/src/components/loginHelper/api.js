@@ -1,35 +1,49 @@
-const API_URL = "http://localhost:8000";
 export const apiFetch = async (endpoint, options = {}) => {
-  const token = localStorage.getItem("access");
+  let token = localStorage.getItem("access");
+  const refresh = localStorage.getItem("refresh");
 
-  const config = {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
+  const makeRequest = async (tokenToUse) => {
+    return fetch(`http://localhost:8000${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+        ...(tokenToUse && { Authorization: `Bearer ${tokenToUse}` }),
+      },
+    });
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, config);
+  let response = await makeRequest(token);
 
-  const text = await response.text();
+  // 🔥 If token expired → refresh it
+  if (response.status === 401 && refresh) {
+    const refreshRes = await fetch("http://localhost:8000/api/token/refresh/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh }),
+    });
 
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = text;
+    if (refreshRes.ok) {
+      const data = await refreshRes.json();
+      localStorage.setItem("access", data.access);
+
+      // retry original request
+      response = await makeRequest(data.access);
+    } else {
+      // refresh also failed → logout
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      throw new Error("Session expired. Please log in again.");
+    }
   }
+
+  const result = await response.json();
 
   if (!response.ok) {
-    console.error("API Error:", response.status, data);
-    throw new Error(
-      typeof data === "object"
-        ? JSON.stringify(data)
-        : data || response.statusText
-    );
+    throw new Error(JSON.stringify(result));
   }
 
-  return data;
+  return result;
 };

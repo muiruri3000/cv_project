@@ -15,6 +15,16 @@ header{
     margin-bottom: 5rem;
 }
 
+.card{
+    background-color: white;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: red;
+    margin-top: 5rem;
+}
+
 nav{
     font-size: 1rem;
 }
@@ -36,10 +46,15 @@ section{
 .login2{
     background-color: #eef0f1;
     width: 100vw;
-    height: 100vh;
+    height: 70vh;
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.login2 div{
+    display: flex;
+    justify-content: end;
 }
 .login2 form{
     display: flex;
@@ -49,7 +64,7 @@ section{
     padding: 2rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 500px;
+    width: 400px;
 }
 
 .login2 input{

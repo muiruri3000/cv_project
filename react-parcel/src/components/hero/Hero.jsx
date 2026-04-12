@@ -31,10 +31,10 @@ const Hero = () => {
 
   return (
     <section
-      className=" bg-dusk-sectionLighter text-black from-gray-50 to-white"
+      className=""
       id="hero "
     >
-      <div className="mx-auto max-w-3xl px-6 py-28 text-center">
+      <div className="mx-auto max-w-3xl px-6 py-28 text-center card text-red-500">
         {/* <h1 className="text-5xl font-extrabold tracking-tight">
           Joseph Muiruri
         </h1> */}

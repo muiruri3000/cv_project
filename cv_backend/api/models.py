@@ -192,6 +192,7 @@ class SoftSkill(models.Model):
 
 class Architecture(models.Model):
     title = models.CharField(max_length=255)
+
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="architectures/", blank=True, null=True)
     order = models.IntegerField(default=0)

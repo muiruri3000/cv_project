@@ -301,7 +301,8 @@ class ArchitectureSerializer(serializers.ModelSerializer):
         ]
 
     def to_internal_value(self, data):
-        data = data.copy()
+        # Convert QueryDict to normal dict
+        data = data.dict()
 
         for key in ["services", "links"]:
             val = data.get(key)
@@ -311,8 +312,6 @@ class ArchitectureSerializer(serializers.ModelSerializer):
                     data[key] = json.loads(val)
                 except json.JSONDecodeError:
                     raise serializers.ValidationError({key: "Invalid JSON format"})
-            elif isinstance(val, list):
-                data[key] = val
             else:
                 data[key] = []
 
@@ -353,6 +352,8 @@ class ArchitectureSerializer(serializers.ModelSerializer):
         services_data = [s for s in services_data if s.get("name")]
         links_data = [l for l in links_data if l.get("label") and l.get("href")]
 
+        print("SERVICES:", services_data)
+        print("LINKS:", links_data)
         for i, service in enumerate(services_data):
             service.pop("order", None)
             ArchitectureService.objects.create(

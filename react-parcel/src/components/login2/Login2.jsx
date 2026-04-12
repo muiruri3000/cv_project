@@ -70,8 +70,7 @@ const handleLogin = async (e) => {
 };
 
   return (
-    <div className="mt-35">
-      <h2>Login</h2>
+    <div className="mt-35 login2">
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
@@ -80,6 +79,7 @@ const handleLogin = async (e) => {
       )}
 
       <form onSubmit={handleLogin}>
+      <h2>Login</h2>
         <div>
           <input
             type="text"

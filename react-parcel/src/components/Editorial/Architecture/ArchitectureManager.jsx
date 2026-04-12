@@ -15,7 +15,7 @@ const slugify = (text) =>
 
 const emptyArchitecture = () => ({
   title: "",
-  slug: "",
+  
   description: "",
   image: null,
   services: [{ name: "" }],
@@ -63,7 +63,7 @@ const ArchitectureManager = () => {
       return {
         ...prev,
         ...updated,
-        slug: slugify(newTitle),
+        // slug: slugify(newTitle),
       };
     });
   };
@@ -77,7 +77,7 @@ const ArchitectureManager = () => {
 
       const formData = new FormData();
       formData.append("title", editorForm.title);
-      formData.append("slug", editorForm.slug); // ✅ added slug
+      // formData.append("slug", editorForm.slug); // ✅ added slug
       formData.append("description", editorForm.description);
 
       if (editorForm.image instanceof File) {
